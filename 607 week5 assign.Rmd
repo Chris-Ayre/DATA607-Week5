@@ -1,0 +1,85 @@
+---
+title: "607 week5 assign"
+author: "Chris Ayre"
+date: "2/28/2019"
+output: html_document
+---
+
+```{r}
+library(readr)
+library(tidyr)
+library(dplyr)
+library(janitor)
+```
+
+
+#### (1) Create a .CSV file (or optionally, a MySQL database!) that includes all of the information above. You’re encouraged to use a “wide” structure similar to how the information appears above, so that you can practice tidying and transformations as described below.
+
+```{r}
+numbersense <- read_csv("~/Google Drive/CUNY SPRING 19/COURSES/data 607/ASSIGNMENTS/numbersense.csv")
+numbersense
+```
+
+#### (2) Read the information from your.CSV file into R,and use tidyr and dplyr as needed to tidy and transform your data.
+
+Condensing the destinations(observations) to rows and  removing empty data.
+```{r}
+numbersense %>% remove_empty("rows")
+
+numbersense_gather <- numbersense %>% gather(Destination, Flights, -X1, -X2, na.rm =TRUE)
+numbersense_gather
+```
+
+
+rename columns for clarity
+```{r}
+names(numbersense_gather) <- c("AIRLINE", "Flight_Status", "Destination", "Flights")
+
+```
+
+spread function to focus on the target data 
+```{r}
+numbersense_spread <- numbersense_gather %>%
+  spread(Flight_Status, Flights)
+```
+
+rename columns for clarity
+```{r}
+names(numbersense_spread) <- c("AIRLINE", "Destination", "Delayed", "On_Time")
+
+```
+
+
+##### (3) Perform analysis to compare the arrival delays for the two airlines.
+
+Display the average number of delays for both airlines
+
+```{r}
+numbersense_spread %>%
+  group_by(AIRLINE) %>%
+  summarise(aver_delay_per_airline = mean(Delayed))
+```
+__AM WEST experiences 57% more delays than ALASKA__
+
+
+Display the chance that a flight will be delayed based on the chosen Airline and Destination
+
+```{r}
+numbersense_spread %>%
+  group_by(AIRLINE, Destination) %>%
+  select(Delayed, On_Time) %>%
+  mutate('(%) Chance_Delay' = (Delayed/(Delayed + On_Time)*100))
+```
+__With this information potential passengers will be see the probability of their flight being delayed before they book it.__
+
+
+Display the two destinations that experience the lowest number of delays per airline.
+
+```{r}
+numbersense_spread %>%
+  group_by(AIRLINE,Destination) %>%
+  summarise(min_delay_per_dest = min(Delayed)) %>%
+  arrange(Destination) %>% slice(1:2)
+```
+__Both Airlines experience their lowest number of delays in LA and Phoenix However, ALASKA is 417% more likely to not experience a delay in Phoenix, while AM WEST is 255% more likely to not experience a delay in LA__
+
